@@ -1,0 +1,30 @@
+<aura:component implements="flexipage:availableForAllPageTypes" access="global" >
+    <aura:attribute access="global" name="mainTitle" type="String" required="true" default="My Properties"/>
+    <aura:attribute name="message" type="string" />
+    <aura:attribute access="private" name="messageToSend" type="String" default=""/>
+    <!-- <aura:attribute name="iframeUrl" type="String" />  -->
+<!-- 
+    <lightning:card title="Salesforce component">
+        <lightning:input name="messageToSend" value="{!v.messageToSend}" label="Message to send to React app: "/>
+        <lightning:button label="Send" onclick="{!c.sendMessage}"/>
+        <br/>
+    </lightning:card> -->
+	
+    <!-- <lightning:card title="Your React Component">
+
+        
+
+    </lightning:card> -->
+    <lightning:container aura:id="jsApp" src="{!$Resource.sigmaChat + '/index.html'}"
+            onmessage="{!c.handleMessage}"
+            onerror="{!c.handleError}"/>
+    <!-- <lightning:card title="Message Output">
+        {!v.message}
+    </lightning:card> -->
+<!-- 
+    <lightning:card title="IFrame Component">
+        <iframe src="{!v.iframeUrl}" />
+
+    </lightning:card>
+     -->
+</aura:component>
