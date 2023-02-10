@@ -2,11 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import { Provider, mergeThemes, teamsTheme } from '@fluentui/react-northstar';
 
 ReactDOM.render(
-  <React.StrictMode>
+  <Provider theme={mergeThemes(teamsTheme)} styles={{margin: '0% 25%'}}>
     <App />
-  </React.StrictMode>,
+  </Provider>,
   document.getElementById('root')
 );
 
