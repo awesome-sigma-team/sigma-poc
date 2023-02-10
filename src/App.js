@@ -11,6 +11,7 @@ import {
   Grid,
   Typography,
 } from "@mui/material";
+import LCC from 'lightning-container';
 
 const baseURL ="https://e47d-2402-e280-3e07-401-15f9-8880-3ec2-b3f8.in.ngrok.io";
 
@@ -34,7 +35,11 @@ function App() {
         if (res.data.message && !res.data.message.message.includes("Sent from your Twilio trial account - Thanks for the message. Configure your number's SMS URL")) {
           console.log(res.data.message.from);
           setMessageFromUser(res.data.message.message);
-          setUserNumber(res.data.message.from);
+          // setUserNumber(res.data.message.from);
+          LCC.sendMessage({
+            name: 'getContactNameFromPhoneNumber',
+            value: res.data.message.from
+          })
           setshowIncomingMessage(true);
         }
       }).catch(err => {
@@ -45,7 +50,15 @@ function App() {
     chatCtl.setActionRequest({ type: "text", always: true }, (response) => {
       sendSMS(response.value);
     });
-  });
+    LCC.addMessageHandler(messageRecievedHandler);
+    return () => LCC.removeMessageHandler(messageRecievedHandler)
+  },[]);
+
+  const messageRecievedHandler = ({ name, value}) => {
+    console.log("Messaged received.");
+    console.log(`Message name: ${name}`);
+    console.log(`Message value: ${value}`);
+  }
 
   const displayUserMessage = async () => {
     await chatCtl.addMessage({

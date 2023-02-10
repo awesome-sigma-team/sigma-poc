@@ -1,4 +1,4 @@
-<aura:component implements="flexipage:availableForAllPageTypes" access="global" >
+<aura:component implements="flexipage:availableForAllPageTypes" access="global" controller="ContactSearch" >
     <aura:attribute access="global" name="mainTitle" type="String" required="true" default="My Properties"/>
     <aura:attribute name="message" type="string" />
     <aura:attribute access="private" name="messageToSend" type="String" default=""/>
