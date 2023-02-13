@@ -17,14 +17,16 @@ import {
   SendIcon,
   Text
 } from '@fluentui/react-northstar'
+import LCC from 'lightning-container';
 
-const baseURL ="https://064f-103-208-69-42.in.ngrok.io";
+const baseURL ="https://cb69-2402-e280-3e07-401-5836-598d-f841-e33c.in.ngrok.io";
 
 function App() {
   const connectionString = `endpoint=https://salesforce-acs.communication.azure.com/;accesskey=xirxA5/+txUsus6AKMaErJMzR2yRtYRhxa+iIkKj3/xOwp9o1VmcvH+Ru8YWWh0Mr8dUoDLBbfG6iIG6DxszSA==`;
   const client = new SmsClient(connectionString);
   const [messageFromUser, setMessageFromUser] = useState("");
   const [userNumber, setUserNumber] = useState("");
+  const [userName, setUserName] = useState("");
   const [chatAccepted, setChatAccepted] = useState(false);
   const [showIncomingMessage, setshowIncomingMessage] = useState(false);
 
@@ -35,13 +37,26 @@ function App() {
           console.log(res.data.message.from);
           setMessageFromUser(res.data.message.message);
           setUserNumber(res.data.message.from);
+          LCC.sendMessage({
+            name: 'getContactNameFromPhoneNumber',
+            value: res.data.message.from
+          })
           setshowIncomingMessage(true);
         }
       }).catch(err => {
         console.log(err);
       });
     }, 1000);
-  });
+    LCC.addMessageHandler(messageRecievedHandler);
+    return () => LCC.removeMessageHandler(messageRecievedHandler)
+  },[]);
+
+  const messageRecievedHandler = ({ name, value}) => {
+    console.log("Messaged received.");
+    console.log(`Message name: ${name}`);
+    console.log(`Message value: ${value}`);
+    setUserName(value);
+  }
 
   const sendSMS = async (message) => {
     const sendResults = await client.send(
@@ -82,7 +97,7 @@ function App() {
     const __sendMessage = () => {
         setItems((currentItems) => [...currentItems, {
             gutter: <Avatar {...robinAvatar} />,
-            message: <Chat.Message content={message} author="Chat Agent" timestamp={new Date().toLocaleString()} mine/>,
+            message: <Chat.Message content={message} author="Chat Agent" mine style={{width: '200px'}}/>,
             attached: 'top',
             contentPosition: 'end',
             key: items.length,
@@ -93,8 +108,8 @@ function App() {
 
     useEffect(() => {
         setItems((currentItems) => [...currentItems, {
-            gutter: <Avatar {...timAvatar} />,
-            message: <Chat.Message content={receivedText} author="Salesforce User" timestamp={new Date().toLocaleString()} />,
+            gutter: <Avatar {...timAvatar}/>,
+            message: <Chat.Message content={receivedText} density={'compact'} author="Salesforce User" />,
             attached: 'top',
             key: items.length,
           }]);
@@ -112,10 +127,10 @@ function App() {
       }))
 
     return (
-        <>
-        <div style={{height: '100%'}}>
-        <Header as="h2" content="Team Sigma Chat Window"  style={{textAlign: 'center'}} />
-        <Chat items={items} style={{height: '450px'}}/>
+        <div style={{padding: '10px'}}>
+        {/* <Header as="h5" content="Team Sigma Chat Window"  style={{textAlign: 'center'}} /> */}
+        
+        <Chat items={items} style={{minHeight: '306px' , padding: '10px'}}/>
         <Input
             fluid
             icon={<SendIcon onClick={(e)=> {
@@ -140,14 +155,13 @@ function App() {
             }
         />
         </div>
-      </>
     );
   }
 
   const ActionsCard = ({setOnChatAccept, setOnReject}) => (
     <Card aria-roledescription="card with action buttons" style={{alignItems: 'center', height: '130px'}}>
       <Flex column>
-        <Text content={`You have got incoming message from ${userNumber}`} weight="bold" styles={{fontSize: '10px'}}/>
+        <Text content={` You have got incoming message from ${userName}`} weight="bold" styles={{fontSize: '10px'}}/>
       </Flex>
       <Flex style={{columnGap: '30px', margin: '12%'}}>
         <Button content="Accept" primary onClick={() => setOnChatAccept(true) } />
@@ -161,7 +175,7 @@ function App() {
       {chatAccepted ? (
           <>
             <ChatComponent sendSMS={sendSMS} receivedText={messageFromUser} />
-            <Button icon={<ChatOffIcon />} iconPosition="before" content="Leave" primary styles={{margin: '3% 44%', backgroundColor: '#f44336', color: 'white'}} onClick={onEndChat} /> 
+            <Button icon={<ChatOffIcon />} iconPosition="before" content="Leave" primary styles={{margin: '33%', marginTop: '10px', backgroundColor: '#f44336', color: 'white'}} onClick={onEndChat} /> 
           </>   
       ) : (
         <Grid style={{margin: '25% 25%'}} >

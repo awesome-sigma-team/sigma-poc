@@ -5,7 +5,9 @@ import App from './App';
 import { Provider, mergeThemes, teamsTheme } from '@fluentui/react-northstar';
 
 ReactDOM.render(
-  <Provider theme={mergeThemes(teamsTheme)} styles={{margin: '0% 25%'}}>
+  <Provider theme={mergeThemes(teamsTheme)} style={{display: 'flex',
+  flexDirection: 'column',
+  height: '100%'}}>
     <App />
   </Provider>,
   document.getElementById('root')
