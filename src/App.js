@@ -2,71 +2,61 @@ import "./App.css";
 import { SmsClient } from "@azure/communication-sms";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ChatController, MuiChat } from "chat-ui-react";
-import {
+import { 
+  AcceptIcon,
+  Avatar,
   Box,
   Button,
-  ButtonGroup,
   Card,
+  Chat,
+  ChatOffIcon,
+  Flex,
   Grid,
-  Typography,
-} from "@mui/material";
+  Header,
+  Input,
+  SendIcon,
+  Text
+} from '@fluentui/react-northstar'
+import LCC from 'lightning-container';
 
-const baseURL ="https://e47d-2402-e280-3e07-401-15f9-8880-3ec2-b3f8.in.ngrok.io";
+const baseURL ="https://cb69-2402-e280-3e07-401-5836-598d-f841-e33c.in.ngrok.io";
 
 function App() {
   const connectionString = `endpoint=https://salesforce-acs.communication.azure.com/;accesskey=xirxA5/+txUsus6AKMaErJMzR2yRtYRhxa+iIkKj3/xOwp9o1VmcvH+Ru8YWWh0Mr8dUoDLBbfG6iIG6DxszSA==`;
   const client = new SmsClient(connectionString);
   const [messageFromUser, setMessageFromUser] = useState("");
   const [userNumber, setUserNumber] = useState("");
-  const [chatCtl] = React.useState(new ChatController());
+  const [userName, setUserName] = useState("");
   const [chatAccepted, setChatAccepted] = useState(false);
   const [showIncomingMessage, setshowIncomingMessage] = useState(false);
 
   useEffect(() => {
-    const startIcon = document.getElementsByClassName("MuiButton-startIcon");
-    if (startIcon[0]) {
-      startIcon[0].style.display = "none";
-    }
-
     setInterval(() => {
       axios.post(baseURL).then((res) => {
         if (res.data.message && !res.data.message.message.includes("Sent from your Twilio trial account - Thanks for the message. Configure your number's SMS URL")) {
           console.log(res.data.message.from);
           setMessageFromUser(res.data.message.message);
           setUserNumber(res.data.message.from);
+          LCC.sendMessage({
+            name: 'getContactNameFromPhoneNumber',
+            value: res.data.message.from
+          })
           setshowIncomingMessage(true);
         }
       }).catch(err => {
         console.log(err);
       });
     }, 1000);
+    LCC.addMessageHandler(messageRecievedHandler);
+    return () => LCC.removeMessageHandler(messageRecievedHandler)
+  },[]);
 
-    chatCtl.setActionRequest({ type: "text", always: true }, (response) => {
-      sendSMS(response.value);
-    });
-  });
-
-  const displayUserMessage = async () => {
-    await chatCtl.addMessage({
-      type: "text",
-      content: messageFromUser,
-      self: false,
-    });
-  };
-
-  
-  useEffect(() => {
-    if (chatAccepted) {
-      chatCtl.clearMessages();
-    }
-  }, [chatAccepted]);
-
-  useEffect(() => {
-    if (chatAccepted) {
-      displayUserMessage();
-    }
-  }, [chatAccepted, messageFromUser]);
+  const messageRecievedHandler = ({ name, value}) => {
+    console.log("Messaged received.");
+    console.log(`Message name: ${name}`);
+    console.log(`Message value: ${value}`);
+    setUserName(value);
+  }
 
   const sendSMS = async (message) => {
     const sendResults = await client.send(
@@ -99,50 +89,105 @@ function App() {
     sendSMS("Agent ended the chat")
   }
 
+  //Fluent UI Chat Componet
+  const ChatComponent = ({ sendSMS, receivedText }) => {
+    const [message, setMessage] = useState('');
+    const [items, setItems] = useState([]);
+      
+    const __sendMessage = () => {
+        setItems((currentItems) => [...currentItems, {
+            gutter: <Avatar {...robinAvatar} />,
+            message: <Chat.Message content={message} author="Chat Agent" mine style={{width: '200px'}}/>,
+            attached: 'top',
+            contentPosition: 'end',
+            key: items.length,
+          }]);
+        sendSMS(message);
+        setMessage('');
+    };
+
+    useEffect(() => {
+        setItems((currentItems) => [...currentItems, {
+            gutter: <Avatar {...timAvatar}/>,
+            message: <Chat.Message content={receivedText} density={'compact'} author="Salesforce User" />,
+            attached: 'top',
+            key: items.length,
+          }]);
+    }, [receivedText]);
+
+    const [robinAvatar, timAvatar] = [
+        'Chat Agent',
+        'Salesforce User',
+      ].map(user => ({
+        name: user,
+        status: {
+          color: 'green',
+          icon: <AcceptIcon />,
+        },
+      }))
+
+    return (
+        <div style={{padding: '10px'}}>
+        {/* <Header as="h5" content="Team Sigma Chat Window"  style={{textAlign: 'center'}} /> */}
+        
+        <Chat items={items} style={{minHeight: '306px' , padding: '10px'}}/>
+        <Input
+            fluid
+            icon={<SendIcon onClick={(e)=> {
+                if (message !=="") {
+                    __sendMessage();
+                    e.target.value = '';
+                }
+                }}
+            />}
+            placeholder="Type here..."
+            styles={{marginTop: '2px'}}
+            onChange={event => { 
+                setMessage(event.target.value); 
+            }}
+            value={message}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' && message !=="") {
+                    __sendMessage(e);
+                    e.target.value = '';
+                }
+              }
+            }
+        />
+        </div>
+    );
+  }
+
+  const ActionsCard = ({setOnChatAccept, setOnReject}) => (
+    <Card aria-roledescription="card with action buttons" style={{alignItems: 'center', height: '130px'}}>
+      <Flex column>
+        <Text content={` You have got incoming message from ${userName}`} weight="bold" styles={{fontSize: '10px'}}/>
+      </Flex>
+      <Flex style={{columnGap: '30px', margin: '12%'}}>
+        <Button content="Accept" primary onClick={() => setOnChatAccept(true) } />
+        <Button content="Reject" secondary onClick={() => setOnReject(false)}  styles={{backgroundColor: '#f44336', color: 'white'}} />
+      </Flex>
+    </Card>
+  );
+
   return (
     <React.Fragment>
       {chatAccepted ? (
-           <Grid container style={{height:"100%" , width:'94%'}}>
-            <Grid item xs={12} sx={{height:"90%"}}>
-            <MuiChat chatController={chatCtl} />
-            </Grid>
-            <Grid item xs={12} sx={{height:"10%",  marginTop:"17px"}}>
-            <Button variant="contained" style={{width:"100%", marginLeft:"7px", height:"auto"}} onClick= {onEndChat}>End Chat</Button>
-            </Grid>
-           </Grid>      
+          <>
+            <ChatComponent sendSMS={sendSMS} receivedText={messageFromUser} />
+            <Button icon={<ChatOffIcon />} iconPosition="before" content="Leave" primary styles={{margin: '33%', marginTop: '10px', backgroundColor: '#f44336', color: 'white'}} onClick={onEndChat} /> 
+          </>   
       ) : (
-        <Grid container>
-          { showIncomingMessage ? <Grid item>
-            
-              <Box sx={{ width: '260px', margin: '10px', marginTop: '125px', marginLeft: "35px"}}>
-                <Card variant="outlined" sx={{padding:'10px', background: 'rgb(2, 136, 209)' , color: 'white'}} raised>
-                  <Typography variant="p">
-                    You have got incoming message from {userNumber}
-                  </Typography>
-                  <ButtonGroup
-                  sx={{marginTop: 2}}
-                    disableElevation
-                    variant="contained"
-                    aria-label="Disabled elevation buttons"
-                  >
-                    <Button onClick={() => setChatAccepted(true)} color="success">
-                      Accept
-                    </Button>
-                    <Button color="error" sx={{ marginLeft: 2 }} onClick={() => setshowIncomingMessage(false)}>
-                      Reject
-                    </Button>
-                  </ButtonGroup>
-                </Card>
-              </Box>
-              </Grid>
-             : 
-             <Typography variant="subtitle2" sx={{margin:10, marginTop: '201px'}}>
-             Team Sigma Chat Window
-         </Typography>
-            }
-        
+        <Grid style={{margin: '25% 25%'}} >
+          { showIncomingMessage && <Grid>
+            <Box>
+              <ActionsCard setOnChatAccept={setChatAccepted} setOnReject={setshowIncomingMessage} />
+            </Box>
+            </Grid>
+          }
         </Grid>
       )}
+      {!chatAccepted && !showIncomingMessage && <Header as="h2" content="On this page chat window will apear"  style={{textAlign: 'center'}} />}
    </React.Fragment>
   );
 }

@@ -3,6 +3,19 @@
         console.log('HandleMessage called !!');
         var message = event.getParams();
         component.set('v.message', message.payload.value);
+        if(message.payload.name ==="getContactNameFromPhoneNumber") {
+            var action = component.get("c.searchForContacts");
+            action.setParams({ phoneNumber : message.payload.value });
+            action.setCallback(this, function(response) {
+                var responseValue = response.getReturnValue();
+                console.log('AURA: ', responseValue);
+                // cmp.set("v.accs",responseValue);
+                component.find("jsApp").message({name:'contactName', value: responseValue[0].Name});
+            })
+
+            $A.enqueueAction(action);
+
+        }
     },
 
     handleError: function (component, event, helper) {
